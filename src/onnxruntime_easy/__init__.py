@@ -33,9 +33,7 @@ _FLOAT4E2M1_TYPE = 23
 
 
 def _ml_dtypes_to_onnx_type(dtype: np.dtype) -> int | None:
-    """
-    Convert a NumPy dtype to an ONNX type.
-    """
+    """Convert a NumPy dtype to an ONNX type."""
     if dtype == ml_dtypes.bfloat16:
         return _BFLOAT16_TYPE
     if dtype == ml_dtypes.float8_e4m3fn:
@@ -55,10 +53,8 @@ def _ml_dtypes_to_onnx_type(dtype: np.dtype) -> int | None:
     return None
 
 
-def _to_ort_value(value: DLPackCompatible | npt.ArrayLike, device: str) -> ort.OrtValue:
-    """
-    Convert a NumPy array to an ONNX Runtime OrtValue.
-    """
+def _to_ort_value(value: npt.ArrayLike | DLPackCompatible, device: str) -> ort.OrtValue:
+    """Convert a NumPy array to an ONNX Runtime OrtValue."""
     # This causes SIGSEGV. Not really working.
     # if hasattr(value, "__dlpack__"):
     #     return ort.OrtValue(_ort_c.OrtValue.from_dlpack(value, False), value)
@@ -72,17 +68,14 @@ def _to_ort_value(value: DLPackCompatible | npt.ArrayLike, device: str) -> ort.O
 
 
 class _WrappedSession(ort.InferenceSession):
-    """
-    A wrapper around the ONNX Runtime InferenceSession to provide a more user-friendly
-    interface for running inference on ONNX models.
-    """
+    """A wrapper around the ONNX Runtime InferenceSession to provide a more user-friendly interface for running inference on ONNX models."""
 
     def __init__(self, *args, device: str, **kwargs):
         super().__init__(*args, **kwargs)
         self.device = device
 
     def __call__(
-        self, *inputs: DLPackCompatible | npt.ArrayLike
+        self, *inputs: npt.ArrayLike | DLPackCompatible
     ) -> Sequence[npt.NDArray]:
         input_names = [inp.name for inp in self.get_inputs()]
         ort_inputs = {
@@ -163,11 +156,10 @@ def load(
     profile_file_prefix: str | None = None,
     custom_ops_libraries: Sequence[str] = (),
     use_deterministic_compute: bool = False,
-    external_initializers: Mapping[str, np.ndarray] | None = None,
+    external_initializers: Mapping[str, npt.ArrayLike | DLPackCompatible] | None = None,
     optimized_model_filepath: str | None = None,
 ):
-    """
-    Load a model from a file.
+    """Load a model from a file.
 
     Args:
         model_path: Path to the model file.
@@ -194,9 +186,7 @@ def load(
     opts.use_deterministic_compute = use_deterministic_compute
     if external_initializers is not None:
         names, values = zip(*external_initializers.items())
-        ort_values = [
-            ort.OrtValue.ortvalue_from_numpy(value, device) for value in values
-        ]
+        ort_values = [_to_ort_value(value, device) for value in values]
         opts.add_external_initializers(names, ort_values)
     if optimized_model_filepath is not None:
         opts.optimized_model_filepath = optimized_model_filepath
