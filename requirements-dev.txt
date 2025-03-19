@@ -1,0 +1,5 @@
+onnxruntime
+onnxscript
+torch
+pytest
+pytest-cov
