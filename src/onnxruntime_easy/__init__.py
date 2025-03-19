@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+__all__ = [
+    "load",
+]
+
 from typing import Literal, Mapping, Sequence
 import numpy as np
 import onnxruntime as ort
 
 
-class WrappedSession(ort.InferenceSession):
+class _WrappedSession(ort.InferenceSession):
     """
     A wrapper around the ONNX Runtime InferenceSession to provide a more user-friendly
     interface for running inference on ONNX models.
@@ -135,7 +139,7 @@ def load(
     for library in custom_ops_libraries:
         opts.register_custom_ops_library(library)
 
-    return WrappedSession(
+    return _WrappedSession(
         model_path,
         sess_options=opts,
         providers=_get_providers(device),
