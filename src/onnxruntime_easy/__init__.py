@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Literal, Protocol
 import ml_dtypes
 import numpy as np
 import onnxruntime as ort
+import onnxruntime.capi._pybind_state as _ort_c
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -59,9 +60,11 @@ def _ml_dtypes_to_onnx_type(dtype: np.dtype) -> int | None:  # noqa: PLR0911
 
 def _to_ort_value(value: npt.ArrayLike | DLPackCompatible, device: str) -> ort.OrtValue:
     """Convert a NumPy array or a DLPack-compatible object to an ONNX Runtime OrtValue."""
-    # This causes SIGSEGV. Not really working.
-    # if hasattr(value, "__dlpack__"):
-    #     return ort.OrtValue(_ort_c.OrtValue.from_dlpack(value, False), value)
+    # TODO: Update this call when dlpack support in OrtValue is improved
+    if hasattr(value, "__dlpack__"):
+        return ort.OrtValue(
+            _ort_c.OrtValue.from_dlpack(value.__dlpack__(), False), value
+        )
     if isinstance(value, np.ndarray):
         maybe_onnx_type = _ml_dtypes_to_onnx_type(value.dtype)
         if maybe_onnx_type is not None:
