@@ -67,7 +67,7 @@ def _to_ort_value(value: npt.ArrayLike | DLPackCompatible, device: str) -> ort.O
     return ort.OrtValue.ortvalue_from_numpy(np.asarray(value), device)
 
 
-class _WrappedSession(ort.InferenceSession):
+class CallableInferenceSession(ort.InferenceSession):
     """A wrapper around the ONNX Runtime InferenceSession to provide a more user-friendly interface for running inference on ONNX models."""
 
     def __init__(self, *args, device: str, **kwargs):
@@ -75,7 +75,9 @@ class _WrappedSession(ort.InferenceSession):
         self.device = device
 
     def __call__(
-        self, *args: npt.ArrayLike | DLPackCompatible, **kwargs: npt.ArrayLike | DLPackCompatible
+        self,
+        *args: npt.ArrayLike | DLPackCompatible,
+        **kwargs: npt.ArrayLike | DLPackCompatible,
     ) -> Sequence[npt.NDArray]:
         input_names = [inp.name for inp in self.get_inputs()]
         ort_inputs = {
@@ -83,14 +85,17 @@ class _WrappedSession(ort.InferenceSession):
             for name, inp in zip(input_names, args)
         }
         ort_inputs.update(
-            {
-                name: _to_ort_value(inp, self.device)
-                for name, inp in kwargs.items()
-            }
+            {name: _to_ort_value(inp, self.device) for name, inp in kwargs.items()}
         )
-        output_names = [out.name for out in self.get_outputs()]
-        ort_outputs = self.run_with_ort_values(output_names, ort_inputs)
+        ort_outputs = self.run_with_ort_values(None, ort_inputs)
         return [output.numpy() for output in ort_outputs]
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(device={self.device}, "
+            f"inputs={[inp.name for inp in self.get_inputs()]}, "
+            f"outputs={[out.name for out in self.get_outputs()]})"
+        )
 
 
 def _get_providers(device: str) -> tuple[str, ...]:
@@ -199,7 +204,7 @@ def load(
     for library in custom_ops_libraries:
         opts.register_custom_ops_library(library)
 
-    return _WrappedSession(
+    return CallableInferenceSession(
         model_path,
         sess_options=opts,
         providers=_get_providers(device),
