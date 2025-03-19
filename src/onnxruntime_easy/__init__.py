@@ -139,5 +139,5 @@ def load(
         model_path,
         sess_options=opts,
         providers=_get_providers(device),
-        device="cuda",
+        device=device,
     )
