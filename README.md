@@ -7,6 +7,7 @@ Simplified APIs for onnxruntime
 ```py
 import onnxruntime_easy as ort_easy
 import numpy as np
+import ml_dtypes
 
 # Simple `load` method that handles setting up ONNX Runtime inference session
 model = ort_easy.load("model.onnx", device="cpu")
