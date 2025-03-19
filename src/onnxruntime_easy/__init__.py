@@ -1,6 +1,7 @@
 """ONNX Runtime made easy."""
 
 from __future__ import annotations
+
 import contextlib
 
 __all__ = [
@@ -203,7 +204,7 @@ def _get_severity_level(level: str) -> int:
     return levels[level]
 
 
-def load(
+def load(  # noqa: D417
     model_path: str,
     /,
     device: Literal["cpu", "cuda"] = "cpu",
