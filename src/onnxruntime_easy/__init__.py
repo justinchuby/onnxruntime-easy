@@ -25,7 +25,7 @@ class DLPackCompatible(Protocol):
     def __dlpack__(self) -> object: ...
 
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 
 _BFLOAT16_TYPE = 16
