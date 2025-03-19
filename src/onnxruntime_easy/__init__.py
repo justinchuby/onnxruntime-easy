@@ -88,11 +88,22 @@ class EasySession(ort.InferenceSession):
         # result is a list of NumPy arrays corresponding to the model outputs.
     """
 
-    def __init__(self, *args, device: str, **kwargs) -> None:  # noqa: D107
+    def __init__(  # noqa: D107
+        self,
+        *args,
+        device: str,
+        log_severity_level: Literal["info", "warning", "error", "fatal"] = "error",
+        log_verbosity_level: int = 0,
+        **kwargs,
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.device = device
-        # Temporary state to store the requested output names
+        # Internal state to store the requested output names
         self._requested_outputs: tuple[str, ...] | None = None
+        # Run options for the session
+        self._run_options = ort.RunOptions()
+        self._run_options.log_severity_level = _get_severity_level(log_severity_level)
+        self._run_options.log_verbosity_level = log_verbosity_level
 
     def __repr__(self) -> str:  # noqa: D105
         return (
@@ -119,7 +130,9 @@ class EasySession(ort.InferenceSession):
         ort_inputs.update(
             {name: _to_ort_value(inp, self.device) for name, inp in kwargs.items()}
         )
-        ort_outputs = self.run_with_ort_values(self._requested_outputs, ort_inputs)
+        ort_outputs = self.run_with_ort_values(
+            self._requested_outputs, ort_inputs, run_options=self._run_options
+        )
         return [output.numpy() for output in ort_outputs]
 
     @contextlib.contextmanager
@@ -255,4 +268,6 @@ def load(
         sess_options=opts,
         providers=_get_providers(device),
         device=device,
+        log_severity_level=log_severity_level,
+        log_verbosity_level=log_verbosity_level,
     )
