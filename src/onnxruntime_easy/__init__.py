@@ -26,9 +26,9 @@ __version__ = "0.0.2"
 if importlib.util.find_spec("ml_dtypes") is not None:
     import ml_dtypes
 
-    _HAS_ML_DTYPE = True
+    _HAS_ML_DTYPES = True
 else:
-    _HAS_ML_DTYPE = False
+    _HAS_ML_DTYPES = False
 
 
 _BFLOAT16_TYPE = 16
@@ -73,7 +73,7 @@ def _to_ort_value(value: npt.ArrayLike | DLPackCompatible, device: str) -> ort.O
         return ort.OrtValue(
             _ort_c.OrtValue.from_dlpack(value.__dlpack__(), False), value
         )
-    if _HAS_ML_DTYPE and isinstance(value, np.ndarray):
+    if _HAS_ML_DTYPES and isinstance(value, np.ndarray):
         maybe_onnx_type = _ml_dtypes_to_onnx_type(value.dtype)
         if maybe_onnx_type is not None:
             return ort.OrtValue.ortvalue_from_numpy_with_onnx_type(
