@@ -9,10 +9,10 @@ __all__ = [
     "load",
 ]
 
+import importlib.util
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Literal, Protocol
 
-import ml_dtypes
 import numpy as np
 import onnxruntime as ort
 import onnxruntime.capi._pybind_state as _ort_c
@@ -21,11 +21,14 @@ if TYPE_CHECKING:
     import numpy.typing as npt
 
 
-class DLPackCompatible(Protocol):
-    def __dlpack__(self) -> object: ...
-
-
 __version__ = "0.0.2"
+
+if importlib.util.find_spec("ml_dtypes") is not None:
+    import ml_dtypes
+
+    _HAS_ML_DTYPES = True
+else:
+    _HAS_ML_DTYPES = False
 
 
 _BFLOAT16_TYPE = 16
@@ -36,6 +39,10 @@ _FLOAT8E5M2FNUZ_TYPE = 20
 _UINT4_TYPE = 21
 _INT4_TYPE = 22
 _FLOAT4E2M1_TYPE = 23
+
+
+class DLPackCompatible(Protocol):
+    def __dlpack__(self) -> object: ...
 
 
 def _ml_dtypes_to_onnx_type(dtype: np.dtype) -> int | None:  # noqa: PLR0911
@@ -66,7 +73,7 @@ def _to_ort_value(value: npt.ArrayLike | DLPackCompatible, device: str) -> ort.O
         return ort.OrtValue(
             _ort_c.OrtValue.from_dlpack(value.__dlpack__(), False), value
         )
-    if isinstance(value, np.ndarray):
+    if _HAS_ML_DTYPES and isinstance(value, np.ndarray):
         maybe_onnx_type = _ml_dtypes_to_onnx_type(value.dtype)
         if maybe_onnx_type is not None:
             return ort.OrtValue.ortvalue_from_numpy_with_onnx_type(
