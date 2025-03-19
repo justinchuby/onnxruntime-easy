@@ -15,11 +15,13 @@ model = ort_easy.load("model.onnx", device="cpu")
 input = np.random.rand(1, 3, 299, 299).astype(ml_dtypes.bfloat16)
 output = model(input)
 
-# Works with torch tensors and any ndarray that implements the __array__ interface
+# Works with any ndarray that implements the __array__ interface
+# Or automatically share data on device (like cuda) with dlpack
 import torch
-input_tensor = torch.rand(1, 3, 299, 299)
-output = model(input)
+model = ort_easy.load("model.onnx", device="cuda")
+input_tensor = torch.rand(1, 3, 299, 299, device="cuda")
+output = model(input_tensor)
 
 with model.set_outputs("output1"):
-    output1 = model(input)
+    output1 = model(input_tensor)
 ```
