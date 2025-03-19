@@ -1,7 +1,10 @@
+"""ONNX Runtime made easy."""
+
 from __future__ import annotations
 
 __all__ = [
     "load",
+    "EasySession",
 ]
 
 from collections.abc import Mapping, Sequence
@@ -67,10 +70,18 @@ def _to_ort_value(value: npt.ArrayLike | DLPackCompatible, device: str) -> ort.O
     return ort.OrtValue.ortvalue_from_numpy(np.asarray(value), device)
 
 
-class CallableInferenceSession(ort.InferenceSession):
-    """A wrapper around the ONNX Runtime InferenceSession to provide a more user-friendly interface for running inference on ONNX models."""
+class EasySession(ort.InferenceSession):
+    """An inference session where everything is easy.
 
-    def __init__(self, *args, device: str, **kwargs):
+    This is a wrapper around the ONNX Runtime InferenceSession to provide a
+    more user-friendly interface for running inference on ONNX models. It makes
+    the model callable and supports Pythonic argument passing.
+
+    Inputs can be anything that is convertible to a NumPy array or a DLPack-compatible
+    object. The outputs are returned as NumPy arrays.
+    """
+
+    def __init__(self, *args, device: str, **kwargs) -> None:  # noqa: D107
         super().__init__(*args, **kwargs)
         self.device = device
 
@@ -79,6 +90,11 @@ class CallableInferenceSession(ort.InferenceSession):
         *args: npt.ArrayLike | DLPackCompatible,
         **kwargs: npt.ArrayLike | DLPackCompatible,
     ) -> Sequence[npt.NDArray]:
+        """Run inference on the model with the given inputs.
+
+        Inputs can be anything that is convertible to a NumPy array or a DLPack-compatible
+        object. The outputs are returned as NumPy arrays.
+        """
         input_names = [inp.name for inp in self.get_inputs()]
         ort_inputs = {
             name: _to_ort_value(inp, self.device)
@@ -90,7 +106,7 @@ class CallableInferenceSession(ort.InferenceSession):
         ort_outputs = self.run_with_ort_values(None, ort_inputs)
         return [output.numpy() for output in ort_outputs]
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # noqa: D105
         return (
             f"{self.__class__.__name__}(device={self.device}, "
             f"inputs={[inp.name for inp in self.get_inputs()]}, "
@@ -169,7 +185,7 @@ def load(
     use_deterministic_compute: bool = False,
     external_initializers: Mapping[str, npt.ArrayLike | DLPackCompatible] | None = None,
     optimized_model_filepath: str | None = None,
-):
+) -> EasySession:
     """Load a model from a file.
 
     Args:
@@ -204,7 +220,7 @@ def load(
     for library in custom_ops_libraries:
         opts.register_custom_ops_library(library)
 
-    return CallableInferenceSession(
+    return EasySession(
         model_path,
         sess_options=opts,
         providers=_get_providers(device),
