@@ -4,15 +4,13 @@ __all__ = [
     "load",
 ]
 
-from typing import Literal, Mapping, Sequence, Protocol
+from typing import Literal, Mapping, Sequence, Protocol, TYPE_CHECKING
 import numpy as np
 import onnxruntime as ort
 import ml_dtypes
 
-from onnxruntime.capi import _pybind_state as _ort_c
-
-
-import numpy.typing as npt
+if TYPE_CHECKING:
+    import numpy.typing as npt
 
 
 class DLPackCompatible(Protocol):
