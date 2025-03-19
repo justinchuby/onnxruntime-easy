@@ -1,10 +1,11 @@
 """ONNX Runtime made easy."""
 
 from __future__ import annotations
+import contextlib
 
 __all__ = [
-    "load",
     "EasySession",
+    "load",
 ]
 
 from collections.abc import Mapping, Sequence
@@ -79,11 +80,26 @@ class EasySession(ort.InferenceSession):
 
     Inputs can be anything that is convertible to a NumPy array or a DLPack-compatible
     object. The outputs are returned as NumPy arrays.
+
+    Example usage::
+        import onnxruntime_easy as ort_easy
+        session = ort_easy.load("model.onnx", device="cuda")
+        result = session(input1, input2, input3)
+        # result is a list of NumPy arrays corresponding to the model outputs.
     """
 
     def __init__(self, *args, device: str, **kwargs) -> None:  # noqa: D107
         super().__init__(*args, **kwargs)
         self.device = device
+        # Temporary state to store the requested output names
+        self._requested_outputs: tuple[str, ...] | None = None
+
+    def __repr__(self) -> str:  # noqa: D105
+        return (
+            f"{self.__class__.__name__}(device={self.device}, "
+            f"inputs={[inp.name for inp in self.get_inputs()]}, "
+            f"outputs={[out.name for out in self.get_outputs()]})"
+        )
 
     def __call__(
         self,
@@ -103,15 +119,29 @@ class EasySession(ort.InferenceSession):
         ort_inputs.update(
             {name: _to_ort_value(inp, self.device) for name, inp in kwargs.items()}
         )
-        ort_outputs = self.run_with_ort_values(None, ort_inputs)
+        ort_outputs = self.run_with_ort_values(self._requested_outputs, ort_inputs)
         return [output.numpy() for output in ort_outputs]
 
-    def __repr__(self) -> str:  # noqa: D105
-        return (
-            f"{self.__class__.__name__}(device={self.device}, "
-            f"inputs={[inp.name for inp in self.get_inputs()]}, "
-            f"outputs={[out.name for out in self.get_outputs()]})"
-        )
+    @contextlib.contextmanager
+    def set_outputs(self, *output_names: str):
+        """Temporarily set the output names for the next inference call.
+
+        Use this context manager to specify which outputs you want to retrieve
+        from the model. This is useful for models with multiple outputs where
+        you only want to get a subset of them.
+
+        Example::
+            with session.set_outputs("output1", "output2"):
+                results = session(input_data)
+                assert len(results) == 2
+                # Only output1 and output2 will be returned.
+        """
+        prev_outputs = self._requested_outputs
+        self._requested_outputs = output_names
+        try:
+            yield
+        finally:
+            self._requested_outputs = prev_outputs
 
 
 def _get_providers(device: str) -> tuple[str, ...]:
