@@ -4,9 +4,66 @@ __all__ = [
     "load",
 ]
 
-from typing import Literal, Mapping, Sequence
+from typing import Literal, Mapping, Sequence, Protocol, TYPE_CHECKING
 import numpy as np
 import onnxruntime as ort
+import ml_dtypes
+
+if TYPE_CHECKING:
+    import numpy.typing as npt
+
+
+class DLPackCompatible(Protocol):
+    def __dlpack__(self) -> object: ...
+
+
+_BFLOAT16_TYPE = 16
+_FLOAT8E4M3FN_TYPE = 17
+_FLOAT8E4M3FNUZ_TYPE = 18
+_FLOAT8E5M2_TYPE = 19
+_FLOAT8E5M2FNUZ_TYPE = 20
+_UINT4_TYPE = 21
+_INT4_TYPE = 22
+_FLOAT4E2M1_TYPE = 23
+
+
+def _ml_dtypes_to_onnx_type(dtype: np.dtype) -> int | None:
+    """
+    Convert a NumPy dtype to an ONNX type.
+    """
+    if dtype == ml_dtypes.bfloat16:
+        return _BFLOAT16_TYPE
+    if dtype == ml_dtypes.float8_e4m3fn:
+        return _FLOAT8E4M3FN_TYPE
+    if dtype == ml_dtypes.float8_e4m3fnuz:
+        return _FLOAT8E4M3FNUZ_TYPE
+    if dtype == ml_dtypes.float8_e5m2:
+        return _FLOAT8E5M2_TYPE
+    if dtype == ml_dtypes.float8_e5m2fnuz:
+        return _FLOAT8E5M2FNUZ_TYPE
+    if dtype == ml_dtypes.uint4:
+        return _UINT4_TYPE
+    if dtype == ml_dtypes.int4:
+        return _INT4_TYPE
+    if dtype == ml_dtypes.float4_e2m1fn:
+        return _FLOAT4E2M1_TYPE
+    return None
+
+
+def _to_ort_value(value: DLPackCompatible | npt.ArrayLike, device: str) -> ort.OrtValue:
+    """
+    Convert a NumPy array to an ONNX Runtime OrtValue.
+    """
+    # This causes SIGSEGV. Not really working.
+    # if hasattr(value, "__dlpack__"):
+    #     return ort.OrtValue(_ort_c.OrtValue.from_dlpack(value, False), value)
+    if isinstance(value, np.ndarray):
+        maybe_onnx_type = _ml_dtypes_to_onnx_type(value.dtype)
+        if maybe_onnx_type is not None:
+            return ort.OrtValue.ortvalue_from_numpy_with_onnx_type(
+                value, onnx_element_type=maybe_onnx_type
+            )
+    return ort.OrtValue.ortvalue_from_numpy(np.asarray(value), device)
 
 
 class _WrappedSession(ort.InferenceSession):
@@ -19,10 +76,12 @@ class _WrappedSession(ort.InferenceSession):
         super().__init__(*args, **kwargs)
         self.device = device
 
-    def __call__(self, *inputs: np.ndarray):
+    def __call__(
+        self, *inputs: DLPackCompatible | npt.ArrayLike
+    ) -> Sequence[npt.NDArray]:
         input_names = [inp.name for inp in self.get_inputs()]
         ort_inputs = {
-            name: ort.OrtValue.ortvalue_from_numpy(inp, self.device)
+            name: _to_ort_value(inp, self.device)
             for name, inp in zip(input_names, inputs)
         }
         output_names = [out.name for out in self.get_outputs()]
