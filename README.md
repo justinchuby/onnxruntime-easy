@@ -19,6 +19,6 @@ import torch
 input_tensor = torch.rand(1, 3, 299, 299)
 output = model(input)
 
-with model.set_outputs("output1")
+with model.set_outputs("output1"):
     output1 = model(input)
 ```
