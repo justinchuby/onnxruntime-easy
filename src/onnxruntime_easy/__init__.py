@@ -4,10 +4,12 @@ __all__ = [
     "load",
 ]
 
-from typing import Literal, Mapping, Sequence, Protocol, TYPE_CHECKING
+from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING, Literal, Protocol
+
+import ml_dtypes
 import numpy as np
 import onnxruntime as ort
-import ml_dtypes
 
 if TYPE_CHECKING:
     import numpy.typing as npt
@@ -15,6 +17,9 @@ if TYPE_CHECKING:
 
 class DLPackCompatible(Protocol):
     def __dlpack__(self) -> object: ...
+
+
+__version__ = "0.0.1"
 
 
 _BFLOAT16_TYPE = 16
