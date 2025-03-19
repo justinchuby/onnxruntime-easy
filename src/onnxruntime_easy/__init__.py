@@ -103,7 +103,7 @@ class EasySession(ort.InferenceSession):
         self,
         *args,
         device: str,
-        log_severity_level: Literal["info", "warning", "error", "fatal"] = "error",
+        log_severity_level: Literal["info", "warning", "error", "fatal"] = "warning",
         log_verbosity_level: int = 0,
         **kwargs,
     ) -> None:
@@ -233,7 +233,7 @@ def load(  # noqa: D417
     ] = "all",
     inter_op_num_threads: int = 0,
     intra_op_num_threads: int = 0,
-    log_severity_level: Literal["info", "warning", "error", "fatal"] = "error",
+    log_severity_level: Literal["info", "warning", "error", "fatal"] = "warning",
     log_verbosity_level: int = 0,
     profile_file_prefix: str | None = None,
     custom_ops_libraries: Sequence[str] = (),
