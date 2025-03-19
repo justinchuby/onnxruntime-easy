@@ -57,6 +57,18 @@ def _get_graph_optimization_level(level: str) -> ort.GraphOptimizationLevel:
     return levels[level]
 
 
+def _get_severity_level(level: str) -> int:
+    levels = {
+        "info": 1,
+        "warning": 2,
+        "error": 3,
+        "fatal": 4,
+    }
+    if level not in levels:
+        raise ValueError(f"Unsupported severity level: {level}")
+    return levels[level]
+
+
 def load(
     model_path: str,
     /,
@@ -78,9 +90,9 @@ def load(
     ] = "all",
     inter_op_num_threads: int = 0,
     intra_op_num_threads: int = 0,
-    log_severity_level: int = 2,
+    log_severity_level: Literal["info", "warning", "error", "fatal"] = "error",
     log_verbosity_level: int = 0,
-    profile_file_prefix: str = "",
+    profile_file_prefix: str | None = None,
     custom_ops_libraries: Sequence[str] = (),
     use_deterministic_compute: bool = False,
     external_initializers: Mapping[str, np.ndarray] | None = None,
@@ -107,9 +119,10 @@ def load(
     )
     opts.inter_op_num_threads = inter_op_num_threads
     opts.intra_op_num_threads = intra_op_num_threads
-    opts.log_severity_level = log_severity_level
+    opts.log_severity_level = _get_severity_level(log_severity_level)
     opts.log_verbosity_level = log_verbosity_level
-    opts.profile_file_prefix = profile_file_prefix
+    if profile_file_prefix is not None:
+        opts.profile_file_prefix = profile_file_prefix
     opts.use_deterministic_compute = use_deterministic_compute
     if external_initializers is not None:
         names, values = zip(*external_initializers.items())
