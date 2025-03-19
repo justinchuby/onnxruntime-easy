@@ -209,6 +209,7 @@ def load(
     device: Literal["cpu", "cuda"] = "cpu",
     # TODO: Support device ID
     *,
+    providers: Sequence[str] = (),
     enable_cpu_mem_arena: bool = True,
     enable_mem_pattern: bool = True,
     enable_mem_reuse: bool = True,
@@ -236,7 +237,8 @@ def load(
 
     Args:
         model_path: Path to the model file.
-        device: Device to run the model on. Can be "cpu" or "cuda".
+        device: Device to run the model on. Can be "cpu" or "cuda". Overridden when
+            providers are specified.
 
     Returns:
         An inference session for the model.
@@ -269,7 +271,7 @@ def load(
     return EasySession(
         model_path,
         sess_options=opts,
-        providers=_get_providers(device),
+        providers=providers if providers else _get_providers(device),
         device=device,
         log_severity_level=log_severity_level,
         log_verbosity_level=log_verbosity_level,
