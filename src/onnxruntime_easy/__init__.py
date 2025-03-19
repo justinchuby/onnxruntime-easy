@@ -9,13 +9,13 @@ __all__ = [
     "load",
 ]
 
+import importlib.util
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Literal, Protocol
 
 import numpy as np
 import onnxruntime as ort
 import onnxruntime.capi._pybind_state as _ort_c
-import importlib.util
 
 if TYPE_CHECKING:
     import numpy.typing as npt
