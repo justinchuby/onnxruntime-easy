@@ -23,6 +23,7 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
+  "numpy",
   "onnxruntime>=1.18.0"
 ]
 
