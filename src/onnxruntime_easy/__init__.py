@@ -32,7 +32,7 @@ _INT4_TYPE = 22
 _FLOAT4E2M1_TYPE = 23
 
 
-def _ml_dtypes_to_onnx_type(dtype: np.dtype) -> int | None:
+def _ml_dtypes_to_onnx_type(dtype: np.dtype) -> int | None:  # noqa: PLR0911
     """Convert a NumPy dtype to an ONNX type."""
     if dtype == ml_dtypes.bfloat16:
         return _BFLOAT16_TYPE
@@ -54,7 +54,7 @@ def _ml_dtypes_to_onnx_type(dtype: np.dtype) -> int | None:
 
 
 def _to_ort_value(value: npt.ArrayLike | DLPackCompatible, device: str) -> ort.OrtValue:
-    """Convert a NumPy array to an ONNX Runtime OrtValue."""
+    """Convert a NumPy array or a DLPack-compatible object to an ONNX Runtime OrtValue."""
     # This causes SIGSEGV. Not really working.
     # if hasattr(value, "__dlpack__"):
     #     return ort.OrtValue(_ort_c.OrtValue.from_dlpack(value, False), value)
@@ -75,13 +75,19 @@ class _WrappedSession(ort.InferenceSession):
         self.device = device
 
     def __call__(
-        self, *inputs: npt.ArrayLike | DLPackCompatible
+        self, *args: npt.ArrayLike | DLPackCompatible, **kwargs: npt.ArrayLike | DLPackCompatible
     ) -> Sequence[npt.NDArray]:
         input_names = [inp.name for inp in self.get_inputs()]
         ort_inputs = {
             name: _to_ort_value(inp, self.device)
-            for name, inp in zip(input_names, inputs)
+            for name, inp in zip(input_names, args)
         }
+        ort_inputs.update(
+            {
+                name: _to_ort_value(inp, self.device)
+                for name, inp in kwargs.items()
+            }
+        )
         output_names = [out.name for out in self.get_outputs()]
         ort_outputs = self.run_with_ort_values(output_names, ort_inputs)
         return [output.numpy() for output in ort_outputs]
