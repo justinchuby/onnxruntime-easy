@@ -32,7 +32,7 @@ class TestAPIs(unittest.TestCase):
             ort_easy.ort_value(np.array([2.0], dtype=np.float32)),
         ]
         outputs = model(*inputs)
-        np.testing.assert_equal(outputs[0], np.array([3.0], dtype=np.float32))
+        np.testing.assert_equal(outputs[0].numpy(), np.array([3.0], dtype=np.float32))
 
 
 if __name__ == "__main__":
