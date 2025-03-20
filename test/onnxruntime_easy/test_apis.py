@@ -4,9 +4,8 @@ import unittest
 
 import numpy as np
 import onnx
-import onnxscript
-
 import onnxruntime_easy as ort_easy
+import onnxscript
 
 
 def create_test_model():
@@ -28,9 +27,11 @@ class TestAPIs(unittest.TestCase):
 
     def test_load(self):
         model = ort_easy.load(self.model_path)
-        outputs = model(
-            np.array([1.0], dtype=np.float32), np.array([2.0], dtype=np.float32)
-        )
+        inputs = [
+            ort_easy.ort_value(np.array([1.0], dtype=np.float32)),
+            ort_easy.ort_value(np.array([2.0], dtype=np.float32)),
+        ]
+        outputs = model(*inputs)
         np.testing.assert_equal(outputs[0], np.array([3.0], dtype=np.float32))
 
 

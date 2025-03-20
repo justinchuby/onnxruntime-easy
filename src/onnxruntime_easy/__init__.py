@@ -7,6 +7,7 @@ import contextlib
 __all__ = [
     "EasySession",
     "load",
+    "ort_value",
 ]
 
 import importlib.util
@@ -66,7 +67,7 @@ def _ml_dtypes_to_onnx_type(dtype: np.dtype) -> int | None:  # noqa: PLR0911
     return None
 
 
-def _to_ort_value(value: npt.ArrayLike | DLPackCompatible, device: str) -> ort.OrtValue:
+def ort_value(value: npt.ArrayLike | DLPackCompatible, device: str = "cpu") -> ort.OrtValue:
     """Convert a NumPy array or a DLPack-compatible object to an ONNX Runtime OrtValue."""
     # TODO: Update this call when dlpack support in OrtValue is improved
     if hasattr(value, "__dlpack__"):
@@ -83,32 +84,30 @@ def _to_ort_value(value: npt.ArrayLike | DLPackCompatible, device: str) -> ort.O
 
 
 class EasySession(ort.InferenceSession):
-    """An inference session where everything is easy.
+    r"""An inference session where everything is easy.
 
     This is a wrapper around the ONNX Runtime InferenceSession to provide a
     more user-friendly interface for running inference on ONNX models. It makes
     the model callable and supports Pythonic argument passing.
 
     Inputs can be anything that is convertible to a NumPy array or a DLPack-compatible
-    object. The outputs are returned as NumPy arrays.
+    object. The outputs are returned as ``OrtValue``\s.
 
     Example usage::
         import onnxruntime_easy as ort_easy
         session = ort_easy.load("model.onnx", device="cuda")
         result = session(input1, input2, input3)
-        # result is a list of NumPy arrays corresponding to the model outputs.
+        # result is a list of OrtValue corresponding to the model outputs.
     """
 
     def __init__(  # noqa: D107
         self,
         *args,
-        device: str,
         log_severity_level: Literal["info", "warning", "error", "fatal"] = "warning",
         log_verbosity_level: int = 0,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
-        self.device = device
         # Internal state to store the requested output names
         self._requested_outputs: tuple[str, ...] | None = None
         # Run options for the session
@@ -118,33 +117,27 @@ class EasySession(ort.InferenceSession):
 
     def __repr__(self) -> str:  # noqa: D105
         return (
-            f"{self.__class__.__name__}(device={self.device}, "
+            f"{self.__class__.__name__}( "
             f"inputs={[inp.name for inp in self.get_inputs()]}, "
             f"outputs={[out.name for out in self.get_outputs()]})"
         )
 
     def __call__(
         self,
-        *args: npt.ArrayLike | DLPackCompatible,
-        **kwargs: npt.ArrayLike | DLPackCompatible,
-    ) -> Sequence[npt.NDArray]:
+        *args: ort.OrtValue,
+        **kwargs: ort.OrtValue,
+    ) -> Sequence[ort.OrtValue]:
         """Run inference on the model with the given inputs.
 
         Inputs can be anything that is convertible to a NumPy array or a DLPack-compatible
         object. The outputs are returned as NumPy arrays.
         """
         input_names = [inp.name for inp in self.get_inputs()]
-        ort_inputs = {
-            name: _to_ort_value(inp, self.device)
-            for name, inp in zip(input_names, args)
-        }
-        ort_inputs.update(
-            {name: _to_ort_value(inp, self.device) for name, inp in kwargs.items()}
-        )
-        ort_outputs = self.run_with_ort_values(
+        ort_inputs = dict(zip(input_names, args))
+        ort_inputs.update(kwargs)
+        return self.run_with_ort_values(
             self._requested_outputs, ort_inputs, run_options=self._run_options
         )
-        return [output.numpy() for output in ort_outputs]
 
     @contextlib.contextmanager
     def set_outputs(self, *output_names: str):
@@ -269,7 +262,7 @@ def load(  # noqa: D417
     opts.use_deterministic_compute = use_deterministic_compute
     if external_initializers is not None:
         names, values = zip(*external_initializers.items())
-        ort_values = [_to_ort_value(value, device) for value in values]
+        ort_values = [ort_value(value, device) for value in values]
         opts.add_external_initializers(names, ort_values)
     if optimized_model_filepath is not None:
         opts.optimized_model_filepath = optimized_model_filepath
@@ -280,7 +273,6 @@ def load(  # noqa: D417
         model_path,
         sess_options=opts,
         providers=providers if providers else _get_providers(device),
-        device=device,
         log_severity_level=log_severity_level,
         log_verbosity_level=log_verbosity_level,
     )
