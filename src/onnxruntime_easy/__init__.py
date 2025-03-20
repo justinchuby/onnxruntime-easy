@@ -67,7 +67,9 @@ def _ml_dtypes_to_onnx_type(dtype: np.dtype) -> int | None:  # noqa: PLR0911
     return None
 
 
-def ort_value(value: npt.ArrayLike | DLPackCompatible, device: str = "cpu") -> ort.OrtValue:
+def ort_value(
+    value: npt.ArrayLike | DLPackCompatible, device: str = "cpu"
+) -> ort.OrtValue:
     """Convert a NumPy array or a DLPack-compatible object to an ONNX Runtime OrtValue."""
     # TODO: Update this call when dlpack support in OrtValue is improved
     if hasattr(value, "__dlpack__"):
@@ -89,10 +91,11 @@ class EasySession(ort.InferenceSession):
     This is a wrapper around the ONNX Runtime InferenceSession to provide a
     more user-friendly interface for running inference on ONNX models.
 
-    Use the :func:`ort_value` function to convert
-    NumPy arrays or DLPack-compatible objects to ``OrtValue``\s. The model can be
-    called like a function, and the inputs can be passed as positional or keyword
-    arguments. The outputs are returned as a list of ``OrtValue``\s.
+    The model can be called like a function, and the input ``OrtValue``\s can be passed as
+    positional or keyword arguments. The outputs are returned as a list of ``OrtValue``\s.
+
+    Use the :func:`ort_value` function to convert NumPy arrays or DLPack-compatible
+    objects to ``OrtValue``\s.
 
     Example usage::
         import onnxruntime_easy as ort_easy
@@ -128,10 +131,13 @@ class EasySession(ort.InferenceSession):
         *args: ort.OrtValue,
         **kwargs: ort.OrtValue,
     ) -> Sequence[ort.OrtValue]:
-        """Run inference on the model with the given inputs.
+        r"""Run inference on the model with the given inputs.
 
-        Inputs can be anything that is convertible to a NumPy array or a DLPack-compatible
-        object. The outputs are returned as NumPy arrays.
+        The model can be called like a function, and the input ``OrtValue``\s can be passed as
+        positional or keyword arguments. The outputs are returned as a list of ``OrtValue``\s.
+
+        Use the :func:`ort_value` function to convert NumPy arrays or DLPack-compatible
+        objects to ``OrtValue``\s.
         """
         input_names = [inp.name for inp in self.get_inputs()]
         ort_inputs = dict(zip(input_names, args))
