@@ -87,11 +87,12 @@ class EasySession(ort.InferenceSession):
     r"""An inference session where everything is easy.
 
     This is a wrapper around the ONNX Runtime InferenceSession to provide a
-    more user-friendly interface for running inference on ONNX models. It makes
-    the model callable and supports Pythonic argument passing.
+    more user-friendly interface for running inference on ONNX models.
 
-    Inputs can be anything that is convertible to a NumPy array or a DLPack-compatible
-    object. The outputs are returned as ``OrtValue``\s.
+    Use the :func:`ort_value` function to convert
+    NumPy arrays or DLPack-compatible objects to ``OrtValue``\s. The model can be
+    called like a function, and the inputs can be passed as positional or keyword
+    arguments. The outputs are returned as a list of ``OrtValue``\s.
 
     Example usage::
         import onnxruntime_easy as ort_easy
