@@ -25,8 +25,6 @@ if TYPE_CHECKING:
 __version__ = "0.0.3"
 
 if importlib.util.find_spec("ml_dtypes") is not None:
-    import ml_dtypes
-
     _HAS_ML_DTYPES = True
 else:
     _HAS_ML_DTYPES = False
@@ -48,6 +46,8 @@ class DLPackCompatible(Protocol):
 
 def _ml_dtypes_to_onnx_type(dtype: np.dtype) -> int | None:  # noqa: PLR0911
     """Convert a NumPy dtype to an ONNX type."""
+    import ml_dtypes
+
     if dtype == ml_dtypes.bfloat16:
         return _BFLOAT16_TYPE
     if dtype == ml_dtypes.float8_e4m3fn:
