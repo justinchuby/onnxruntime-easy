@@ -73,9 +73,13 @@ def ort_value(
     """Convert a NumPy array or a DLPack-compatible object to an ONNX Runtime OrtValue."""
     # TODO: Update this call when dlpack support in OrtValue is improved
     if hasattr(value, "__dlpack__"):
-        return ort.OrtValue(
-            _ort_c.OrtValue.from_dlpack(value.__dlpack__(), False), value
-        )
+        # Zero-size tensors are not contiguous in the DLPack sense,
+        # so fall through to the numpy path for them.
+        is_zero_size = hasattr(value, "size") and value.size == 0
+        if not is_zero_size:
+            return ort.OrtValue(
+                _ort_c.OrtValue.from_dlpack(value.__dlpack__(), False), value
+            )
     if _HAS_ML_DTYPES and isinstance(value, np.ndarray):
         maybe_onnx_type = _ml_dtypes_to_onnx_type(value.dtype)
         if maybe_onnx_type is not None:
