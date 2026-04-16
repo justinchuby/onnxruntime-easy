@@ -11,20 +11,16 @@ authors = [
   { name = "Justin Chu", email = "justinchuby@users.noreply.github.com" },
 ]
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 classifiers = [
   "Development Status :: 3 - Alpha",
-  "Environment :: Console",
   "Intended Audience :: Developers",
-  "Operating System :: POSIX",
-  "Operating System :: MacOS :: MacOS X",
-  "Operating System :: Microsoft :: Windows",
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
   "numpy",
-  "onnxruntime>=1.18.0"
+  # No onnxruntime dependency to allow users to install their own device dependent packages
 ]
 
 [project.urls]
