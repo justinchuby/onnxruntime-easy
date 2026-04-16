@@ -177,6 +177,8 @@ def _get_providers(device: str) -> tuple[str, ...]:
         return ("CPUExecutionProvider",)
     if device == "cuda":
         return ("CUDAExecutionProvider", "CPUExecutionProvider")
+    if device == "webgpu":
+        return ("WebGPUExecutionProvider", "CPUExecutionProvider")
     raise ValueError(f"Unsupported device: {device}")
 
 
@@ -218,7 +220,7 @@ def _get_severity_level(level: str) -> int:
 def load(  # noqa: D417
     model_path: str,
     /,
-    device: Literal["cpu", "cuda"] = "cpu",
+    device: Literal["cpu", "cuda", "webgpu"] = "cpu",
     # TODO: Support device ID
     *,
     providers: Sequence[str] = (),
@@ -249,7 +251,7 @@ def load(  # noqa: D417
 
     Args:
         model_path: Path to the model file.
-        device: Device to run the model on. Can be "cpu" or "cuda". Overridden when
+        device: Device to run the model on. Can be "cpu", "cuda", or "webgpu". Overridden when
             providers are specified.
 
     Returns:
