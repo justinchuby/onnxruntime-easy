@@ -7,6 +7,8 @@ import onnx
 import onnxruntime_easy as ort_easy
 import onnxscript
 
+from onnxruntime_easy import _get_providers
+
 
 def create_test_model():
     # Define a simple ONNX model using onnxscript
@@ -33,6 +35,31 @@ class TestAPIs(unittest.TestCase):
         ]
         outputs = model(*inputs)
         np.testing.assert_equal(outputs[0].numpy(), np.array([3.0], dtype=np.float32))
+
+    def test_load_unsupported_device(self):
+        with self.assertRaises(ValueError):
+            ort_easy.load(self.model_path, device="unsupported_device")
+
+
+class TestGetProviders(unittest.TestCase):
+    def test_cpu(self):
+        self.assertEqual(_get_providers("cpu"), ("CPUExecutionProvider",))
+
+    def test_cuda(self):
+        self.assertEqual(
+            _get_providers("cuda"),
+            ("CUDAExecutionProvider", "CPUExecutionProvider"),
+        )
+
+    def test_webgpu(self):
+        self.assertEqual(
+            _get_providers("webgpu"),
+            ("WebGPUExecutionProvider", "CPUExecutionProvider"),
+        )
+
+    def test_unsupported_device(self):
+        with self.assertRaises(ValueError):
+            _get_providers("unsupported")
 
 
 if __name__ == "__main__":
