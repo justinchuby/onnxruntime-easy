@@ -54,7 +54,7 @@ class TestGetProviders(unittest.TestCase):
     def test_webgpu(self):
         self.assertEqual(
             _get_providers("webgpu"),
-            ("WebGPUExecutionProvider", "CPUExecutionProvider"),
+            ("WebGpuExecutionProvider", "CPUExecutionProvider"),
         )
 
     def test_unsupported_device(self):
