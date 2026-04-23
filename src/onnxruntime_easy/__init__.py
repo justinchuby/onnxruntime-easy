@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     import numpy.typing as npt
 
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 if importlib.util.find_spec("ml_dtypes") is not None:
     import ml_dtypes
