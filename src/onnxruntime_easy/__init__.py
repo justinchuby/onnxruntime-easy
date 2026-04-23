@@ -178,7 +178,7 @@ def _get_providers(device: str) -> tuple[str, ...]:
     if device == "cuda":
         return ("CUDAExecutionProvider", "CPUExecutionProvider")
     if device == "webgpu":
-        return ("WebGPUExecutionProvider", "CPUExecutionProvider")
+        return ("WebGpuExecutionProvider", "CPUExecutionProvider")
     raise ValueError(f"Unsupported device: {device}")
 
 
